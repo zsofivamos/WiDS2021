@@ -91,6 +91,9 @@ data_clean %>%
 
 # ok, seems a bit more reasonable. Let's move on.
 
+# write this data out to csv
+
+write.csv(data_clean, "data_clean.csv")
 
 
 
