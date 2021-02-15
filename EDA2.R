@@ -64,21 +64,46 @@ levels = c(levels(df1$hospital_admit_source),"Unknown"))
 
 # this variable should no longer be in the missing list
 
-blue_zone <- profile_missing(df1) %>% 
-  filter(pct_missing > 0.05)
-
-blue_zone <- blue_zone$feature
-
-# how many columns is that
-df1 %>% 
-  select(blue_zone) %>% 
-  ncol()
-
-# 37. Let's check the distributions of these variables
-
-df1 %>% 
-  select(blue_zone) %>% 
-  plot_histogram() 
-
 # as a rule of thumb learned from Stackoverflow, I'm going to pick out the numerical variables and impute the missing 
 # values with the mean. 
+
+## Imputing Factors
+
+# let's check which variables are factors and how many values are missing. Then we can go ahead and create
+# "Unknown" categories
+
+df1 %>% 
+  select_if(is.factor) %>% 
+  plot_missing()
+
+# We're good for most of these, only need to add "unknown" to icu_admit_source and ethnicity
+
+df1$icu_admit_source <- factor(ifelse(is.na(df1$icu_admit_source), "Unknown", paste(df1$icu_admit_source)),
+                                    levels = c(levels(df1$icu_admit_source),"Unknown"))
+
+df1$ethnicity <- factor(ifelse(is.na(df1$ethnicity), "Unknown", paste(df1$ethnicity)),
+                               levels = c(levels(df1$ethnicity),"Unknown"))
+
+## Imputing numbers
+
+df1 %>% 
+  select_if(is.numeric) %>% 
+  plot_histogram()
+
+
+## check correlations
+plot_correlation(na.omit(df1), type = "c")
+
+# first glimpse, there seem to be a few values positively correlating with diabetes: glucose_apache, d1_glucose_max, age, bmi, weight, 
+# arf_apache, bun_apache, creatinine_apache, d1_bun_max, d1_bun_min, d1_creatinine_max, d1_creatinine_min, d1_glucose_min, 
+# d1_potassium_max
+
+imputed_df <- df1 %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), mean(., na.rm = TRUE)))
+
+# cool! We have our imputed & cleaned data!!
+
+write.csv(imputed_df,"imputed_df.csv")
+
+
+
