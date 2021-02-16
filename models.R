@@ -60,6 +60,7 @@ summary(model2)
 library(caret)
 varImp(model2)
 
+# split data and see how the glm works
 
 
 
