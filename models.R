@@ -51,4 +51,15 @@ lm_model <- lm_robust(diabetes_mellitus~ d1_glucose_max + glucose_apache + bmi +
 
 # this is a pretty shitty model. not much information going on there. 
 
+# try something else
+
+
+model2 <- glm(diabetes_mellitus~ d1_glucose_max + glucose_apache + bmi + weight, family = "binomial", data = data)
+summary(model2)
+
+library(caret)
+varImp(model2)
+
+
+
 
