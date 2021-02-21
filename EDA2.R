@@ -51,6 +51,8 @@ df1 %>%
 
 describe(df1)
 
+## Imputing Factors -------------------------------------------------------------------------------------------------------------------
+
 # one variable seems to be categorical, let's check what we have there
 sum(is.na(df1$hospital_admit_source))
 
@@ -67,25 +69,28 @@ levels = c(levels(df1$hospital_admit_source),"Unknown"))
 # as a rule of thumb learned from Stackoverflow, I'm going to pick out the numerical variables and impute the missing 
 # values with the mean. 
 
-## Imputing Factors
-
 # let's check which variables are factors and how many values are missing. Then we can go ahead and create
-# "Unknown" categories
+# "Unknown" categories when needed, or simply add them to the existing ones.
 
 df1 %>% 
   select_if(is.factor) %>% 
   plot_missing()
 
-# notice that our target variable is not a factor. we'll have to change that.
+# notice that our target variable is not on the list, so it's currently not encoded as a factor. we'll have to change that.
 df1$diabetes_mellitus <- factor(df1$diabetes_mellitus, labels = c("No","Yes"))
 
-# We're good for most of these, only need to add "unknown" to icu_admit_source and ethnicity
+# We're good for most of these, only need to check icu_admit_source and ethnicity
+table(df1$icu_admit_source)
 
+# this variable doesn't have an unknown category, let's add it in
 df1$icu_admit_source <- factor(ifelse(is.na(df1$icu_admit_source), "Unknown", paste(df1$icu_admit_source)),
                                     levels = c(levels(df1$icu_admit_source),"Unknown"))
 
-df1$ethnicity <- factor(ifelse(is.na(df1$ethnicity), "Unknown", paste(df1$ethnicity)),
-                               levels = c(levels(df1$ethnicity),"Unknown"))
+# check existing values of ethnicity
+table(df1$ethnicity)
+
+# here we do have an Other/Unknown value, let's just put all the NAs in that box 
+df1$ethnicity <- factor(ifelse(is.na(df1$ethnicity), "Other/Unknown", paste(df1$ethnicity)),levels = c(levels(df1$ethnicity)))
 
 
 ## Imputing numbers
@@ -116,8 +121,7 @@ df2 <- read.csv("UnlabeledWiDS2021.csv")
 df2$icu_admit_source <- factor(ifelse(is.na(df2$icu_admit_source), "Unknown", paste(df2$icu_admit_source)),
                                levels = c(levels(df2$icu_admit_source),"Unknown"))
 
-df2$ethnicity <- factor(ifelse(is.na(df2$ethnicity), "Unknown", paste(df2$ethnicity)),
-                        levels = c(levels(df2$ethnicity),"Unknown"))
+df2$ethnicity <- factor(ifelse(is.na(df2$ethnicity), "Other/Unknown", paste(df2$ethnicity)),levels = c(levels(df2$ethnicity)))
 
 df2$hospital_admit_source <- factor(ifelse(is.na(df2$hospital_admit_source), "Unknown", paste(df2$hospital_admit_source)),
                                     levels = c(levels(df2$hospital_admit_source),"Unknown"))
