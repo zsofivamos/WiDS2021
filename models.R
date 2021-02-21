@@ -201,8 +201,55 @@ lasso_submission <- data.table(
 
 write.csv(lasso_submission, "lasso_submission.csv", row.names=FALSE)
 
+## RANDOM FOREST --------------------------------------------------------------
 
+# tune params
+tune_grid <- expand.grid(
+  .mtry = c(5, 7, 9),
+  .splitrule = "gini",
+  .min.node.size = c(7, 9, 10)
+)
 
+# set seed and run model
+set.seed(13505)
+rf_model <- train(diabetes_mellitus ~ .,
+                  method = "ranger",
+                  data = data_train,
+                  trControl = train_control,
+                  tuneGrid = tune_grid,
+                  importance = "impurity",
+                  na.action = na.omit
+)
 
+# save model to file
+saveRDS(rf_model, "rf_model.rds")
 
+# add predictions to test set
+validation_prediction_probs <- predict.train(rf_model, 
+                                             newdata = data_test, 
+                                             type = "prob")
+
+data_test$diabetes_pred <- validation_prediction_probs$Yes
+
+# check performance on validation set
+rf_prediction <- prediction(validation_prediction_probs$Yes,
+                               data_test[["diabetes_mellitus"]])
+
+(AUC_test <- performance(rf_prediction, "auc")@y.values)
+# pretty crappy score.but let's upload to kaggle just as a starter
+
+## predict for actual holdout set
+
+# add predictions to holdout set
+test_prediction_probs <- predict.train(rf_model, 
+                                       newdata = test_set, 
+                                       type = "prob")
+test_set$diabetes<- test_prediction_probs$Yes
+
+# submission
+rf_submission <- data.table(
+  encounter_id = test_set$encounter_id,
+  diabetes_mellitus = test_set$diabetes)
+
+write.csv(rf_submission, "rf_submission.csv", row.names=FALSE)
 
