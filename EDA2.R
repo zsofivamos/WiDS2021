@@ -76,6 +76,9 @@ df1 %>%
   select_if(is.factor) %>% 
   plot_missing()
 
+# notice that our target variable is not a factor. we'll have to change that.
+df1$diabetes_mellitus <- factor(df1$diabetes_mellitus, labels = c("No","Yes"))
+
 # We're good for most of these, only need to add "unknown" to icu_admit_source and ethnicity
 
 df1$icu_admit_source <- factor(ifelse(is.na(df1$icu_admit_source), "Unknown", paste(df1$icu_admit_source)),
@@ -83,6 +86,8 @@ df1$icu_admit_source <- factor(ifelse(is.na(df1$icu_admit_source), "Unknown", pa
 
 df1$ethnicity <- factor(ifelse(is.na(df1$ethnicity), "Unknown", paste(df1$ethnicity)),
                                levels = c(levels(df1$ethnicity),"Unknown"))
+
+df1$diabetes_mellitus <- factor(df1$diabetes_mellitus, labels = c("No","Yes"))
 
 ## Imputing numbers
 
