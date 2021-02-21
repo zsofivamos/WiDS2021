@@ -114,40 +114,87 @@ imputed_df <- df1 %>%
 
 write.csv(imputed_df,"imputed_df.csv")
 
-## Let's transform the holdout set's factors too for consistency
+## Let's transform the holdout set too for consistency -----------------------------------------------------------------------------
 
 df2 <- read.csv("UnlabeledWiDS2021.csv")
 
-df2$icu_admit_source <- factor(ifelse(is.na(df2$icu_admit_source), "Unknown", paste(df2$icu_admit_source)),
-                               levels = c(levels(df2$icu_admit_source),"Unknown"))
+## drop variables
+df2 <- df2 %>% 
+  select(-features_to_drop)
 
-df2$hospital_admit_source <- factor(ifelse(is.na(df2$hospital_admit_source), "Unknown", paste(df2$hospital_admit_source)),
-                                    levels = c(levels(df2$hospital_admit_source),"Unknown"))
+## compare and clean up factors
+df2 %>% select_if(is.factor) %>% colnames()
 
-## ethnicity seems to have blanks in the test set as a factor level. we'll need to fix this
+# icu_admit_source ---------------------
+
+# compare
+levels(df1$icu_admit_source)
+levels(df2$icu_admit_source)
+
+# we have an empty factor here, let's deal with it
+library(forcats)
+df2$icu_admit_source<- df2$icu_admit_source %>% fct_collapse("Unknown" = c("","Unknown"))
+# reorder to match df1
+df2$icu_admit_source <-fct_relevel(df2$icu_admit_source, c("Accident & Emergency","Floor","Operating Room / Recovery","Other Hospital","Other ICU","Unknown"))
+
+
+# hospital_admit_source ---------------------------
+
+levels(df1$hospital_admit_source)
+levels(df2$hospital_admit_source)
+str(df2$hospital_admit_source)
+# assign Unknown value and use levels from df1 to align
+df2$hospital_admit_source <- factor(ifelse(is.na(df2$hospital_admit_source)|df2$hospital_admit_source == "", "Unknown", paste(df2$hospital_admit_source)),
+                                    levels = c(levels(df1$hospital_admit_source)))
+
+
+
+
+
+# ethnicity ------------------------------------------
+
+# ethnicity seems to have blanks in the test set as a factor level. we'll need to fix this
+levels(df1$ethnicity)
+levels(df2$ethnicity)
+
 table(df2$ethnicity)
 View(df2 %>% select(ethnicity))
 
-levels(df2$ethnicity)
 # some blank rows were not picked up by the NA counter
 # let's merge those into the unknown
-library(forcats)
 
-# let's merge the empty level into the unknown one
 df2$ethnicity <- df2$ethnicity %>% fct_collapse("Other/Unknown" = c("","Other/Unknown"))
 
 # reorder to match df1
-# check the levels of df1
-levels(df1$ethnicity)
-
 df2$ethnicity <-fct_relevel(df2$ethnicity, c("African American","Asian","Caucasian","Hispanic","Native American","Other/Unknown"))
-# double check
+
+# compare levels
+levels(df1$ethnicity)
 levels(df2$ethnicity)
 
-df2 %>% 
-  select_if(is.factor) %>% 
-  plot_missing()
+# gender ----------------------------------------------
 
+levels(df1$gender)
+levels(df2$gender)
+
+# ok, the holdout set has blanks, let's call those U here too
+levels(df2$gender)[levels(df2$gender) == ""] <- "U"
+# reorder
+df2$gender <-fct_relevel(df2$gender, c("F","M","U"))
+
+
+# icu_stay_type ----------------------------------------------
+
+levels(df1$icu_stay_type)
+levels(df2$icu_stay_type)
+# wow, a match.
+
+# icu_type -----------------------------------------------
+
+levels(df1$icu_type)
+levels(df2$icu_type)
+# wooow, another match, incredible
+                         
 # cool, let's save to csv
 write_csv(df2, "unlabeled.csv")
 
