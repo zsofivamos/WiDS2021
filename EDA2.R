@@ -121,10 +121,28 @@ df2 <- read.csv("UnlabeledWiDS2021.csv")
 df2$icu_admit_source <- factor(ifelse(is.na(df2$icu_admit_source), "Unknown", paste(df2$icu_admit_source)),
                                levels = c(levels(df2$icu_admit_source),"Unknown"))
 
-df2$ethnicity <- factor(ifelse(is.na(df2$ethnicity), "Other/Unknown", paste(df2$ethnicity)),levels = c(levels(df2$ethnicity)))
-
 df2$hospital_admit_source <- factor(ifelse(is.na(df2$hospital_admit_source), "Unknown", paste(df2$hospital_admit_source)),
                                     levels = c(levels(df2$hospital_admit_source),"Unknown"))
+
+## ethnicity seems to have blanks in the test set as a factor level. we'll need to fix this
+table(df2$ethnicity)
+View(df2 %>% select(ethnicity))
+
+levels(df2$ethnicity)
+# some blank rows were not picked up by the NA counter
+# let's merge those into the unknown
+library(forcats)
+
+# let's merge the empty level into the unknown one
+df2$ethnicity <- df2$ethnicity %>% fct_collapse("Other/Unknown" = c("","Other/Unknown"))
+
+# reorder to match df1
+# check the levels of df1
+levels(df1$ethnicity)
+
+df2$ethnicity <-fct_relevel(df2$ethnicity, c("African American","Asian","Caucasian","Hispanic","Native American","Other/Unknown"))
+# double check
+levels(df2$ethnicity)
 
 df2 %>% 
   select_if(is.factor) %>% 
