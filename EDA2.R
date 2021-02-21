@@ -112,7 +112,7 @@ imputed_df <- df1 %>%
 
 # cool! We have our imputed & cleaned data!!
 
-write.csv(imputed_df,"imputed_df.csv")
+write.csv(imputed_df,"imputed_df.csv",row.names=FALSE)
 
 ## Let's transform the holdout set too for consistency -----------------------------------------------------------------------------
 
@@ -195,6 +195,14 @@ levels(df1$icu_type)
 levels(df2$icu_type)
 # wooow, another match, incredible
                          
+## Missing data in the test set
+df2 %>% plot_missing()
+
+# seems like we gotta impute the values here.
+
+imputed_test_set <- df2 %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), mean(., na.rm = TRUE)))
+
 # cool, let's save to csv
-write_csv(df2, "unlabeled.csv")
+write.csv(imputed_test_set, "unlabeled.csv", row.names=FALSE)
 
