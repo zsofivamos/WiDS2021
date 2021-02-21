@@ -87,7 +87,6 @@ df1$icu_admit_source <- factor(ifelse(is.na(df1$icu_admit_source), "Unknown", pa
 df1$ethnicity <- factor(ifelse(is.na(df1$ethnicity), "Unknown", paste(df1$ethnicity)),
                                levels = c(levels(df1$ethnicity),"Unknown"))
 
-df1$diabetes_mellitus <- factor(df1$diabetes_mellitus, labels = c("No","Yes"))
 
 ## Imputing numbers
 
@@ -110,5 +109,23 @@ imputed_df <- df1 %>%
 
 write.csv(imputed_df,"imputed_df.csv")
 
+## Let's transform the holdout set's factors too for consistency
 
+df2 <- read.csv("UnlabeledWiDS2021.csv")
+
+df2$icu_admit_source <- factor(ifelse(is.na(df2$icu_admit_source), "Unknown", paste(df2$icu_admit_source)),
+                               levels = c(levels(df2$icu_admit_source),"Unknown"))
+
+df2$ethnicity <- factor(ifelse(is.na(df2$ethnicity), "Unknown", paste(df2$ethnicity)),
+                        levels = c(levels(df2$ethnicity),"Unknown"))
+
+df2$hospital_admit_source <- factor(ifelse(is.na(df2$hospital_admit_source), "Unknown", paste(df2$hospital_admit_source)),
+                                    levels = c(levels(df2$hospital_admit_source),"Unknown"))
+
+df2 %>% 
+  select_if(is.factor) %>% 
+  plot_missing()
+
+# cool, let's save to csv
+write_csv(df2, "unlabeled.csv")
 
