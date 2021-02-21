@@ -51,10 +51,14 @@ data %>%
   group_by(gender) %>% 
   summarise(n())
 
-## 66 observations' genders are missing. That's not a huge amount, let's drop the rows
+## 66 observations' genders are missing. Let's check the factor levels
+str(data$gender) # gender is not a factor in this dataset, hm. Let's add in an U for Unknown
 
-data_clean <- data %>% 
-  filter(!is.na(gender))
+data$gender <- ifelse(is.na(data$gender), "U", data$gender)
+
+
+data_clean <- data
+
 
 # 3.) check the age distribution
 
