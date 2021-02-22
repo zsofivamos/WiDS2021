@@ -184,7 +184,6 @@ lasso_prediction <- prediction(validation_prediction_probs$Yes,
                              data_test[["diabetes_mellitus"]])
 
 (AUC_test <- performance(lasso_prediction, "auc")@y.values)
-# pretty crappy score.but let's upload to kaggle just as a starter
 
 ## predict for actual holdout set
 
@@ -236,7 +235,6 @@ rf_prediction <- prediction(validation_prediction_probs$Yes,
                                data_test[["diabetes_mellitus"]])
 
 (AUC_test <- performance(rf_prediction, "auc")@y.values)
-# pretty crappy score.but let's upload to kaggle just as a starter
 
 ## predict for actual holdout set
 
@@ -253,3 +251,52 @@ rf_submission <- data.table(
 
 write.csv(rf_submission, "rf_submission.csv", row.names=FALSE)
 
+## XGBoost 1 ------------------------------------------------------------------------------
+
+### XGBOOST -------------------------------------------------------------------------------------------
+xgb_grid <- expand.grid(nrounds = c(500, 1000),
+                        max_depth = c(2, 3, 5),
+                        eta = c(0.01, 0.05),
+                        gamma = 0,
+                        colsample_bytree = c(0.5, 0.7),
+                        min_child_weight = 1, # similar to n.minobsinnode
+                        subsample = c(0.5))
+
+set.seed(13505)
+xgboost_model <- train(diabetes_mellitus ~ .,
+                       method = "xgbTree",
+                       data = data_train,
+                       trControl = train_control,
+                       tuneGrid = xgb_grid)
+xgboost_model
+
+# save model for later
+saveRDS(xgboost_model, "xgboost1.rds")
+
+# add predictions to test set
+validation_prediction_probs <- predict.train(xgboost_model, 
+                                             newdata = data_test, 
+                                             type = "prob")
+
+data_test$diabetes_pred <- validation_prediction_probs$Yes
+
+# check performance on validation set
+xgboost_prediction <- prediction(validation_prediction_probs$Yes,
+                            data_test[["diabetes_mellitus"]])
+
+(AUC_test <- performance(xgboost_prediction, "auc")@y.values)
+
+## predict for actual holdout set
+
+# add predictions to holdout set
+test_prediction_probs <- predict.train(xgboost_model, 
+                                       newdata = test_set, 
+                                       type = "prob")
+test_set$diabetes<- test_prediction_probs$Yes
+
+# submission
+xgb_submission <- data.table(
+  encounter_id = test_set$encounter_id,
+  diabetes_mellitus = test_set$diabetes)
+
+write.csv(xgb_submission, "xgb1.csv", row.names=FALSE)
