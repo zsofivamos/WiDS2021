@@ -321,7 +321,7 @@ xgboost_model <- train(diabetes_mellitus ~ .,
                        trControl = train_control,
                        tuneGrid = xgb_grid)
 
-saveRDS(xgboost_model, "xgboost2.RDS")
+saveRDS(xgboost_model, "xgboost2.rds")
 
 # add predictions to test set
 validation_prediction_probs <- predict.train(xgboost_model, 
