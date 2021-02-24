@@ -350,3 +350,8 @@ xgb_submission <- data.table(
   diabetes_mellitus = test_set$diabetes)
 
 write.csv(xgb_submission, "xgb2.csv", row.names=FALSE)
+
+
+
+
+
