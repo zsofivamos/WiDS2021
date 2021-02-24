@@ -1,15 +1,16 @@
 library(tidyverse)
 library(dplyr)
+library(caret)
+library(estimatr)
+library(knitr)
+library(ROCR)
+library(data.table)
 
 data <- read.csv("imputed_df.csv")
 #head(data)
 #table(data$diabetes_mellitus)
 
 test_set <- read.csv("unlabeled.csv")
-
-# see if there are any interesting correlations going on
-library(GGally)
-ggcorr(data)
 
 # same thing we've seen before: d1_glucose_max, glucose_apache, etc
 
@@ -45,7 +46,7 @@ factor_variables <- data %>%
   colnames()
 
 ## Split data into training and validation sets
-library(caret)
+# import library(caret)
 
 training_ratio <- 0.70
 
@@ -76,9 +77,9 @@ train_control <- trainControl(
 # I'm going to take the top 4 variables and add gender to them
 # this way we can get a baseline model. 
 # I'm going to add gender to the model as well. 
-
-library(estimatr)
-library(knitr)
+# 
+# library(estimatr)
+# library(knitr)
 
 # remind me what the top correlations were
 top_correlations
@@ -125,7 +126,7 @@ validation_prediction_probs <- predict.train(glm_model,
 data_test$diabetes_pred <- validation_prediction_probs$Yes
 
 # check performance on validation set
-library(ROCR)
+# library(ROCR)
 
 glm_prediction <- prediction(validation_prediction_probs$Yes,
                              data_test[["diabetes_mellitus"]])
@@ -142,7 +143,7 @@ test_prediction_probs <- predict.train(glm_model,
 test_set$diabetes<- test_prediction_probs$Yes
 
 # put together test file
-library(data.table)
+# library(data.table)
 
 glm_submission <- data.table(
   encounter_id = test_set$encounter_id,
@@ -272,7 +273,7 @@ xgboost_model
 
 # save model for later
 saveRDS(xgboost_model, "xgboost1.rds")
-
+readRDS("xgboost1.rds")
 # add predictions to test set
 validation_prediction_probs <- predict.train(xgboost_model, 
                                              newdata = data_test, 
@@ -300,3 +301,50 @@ xgb_submission <- data.table(
   diabetes_mellitus = test_set$diabetes)
 
 write.csv(xgb_submission, "xgb1.csv", row.names=FALSE)
+
+## XGBoost refined
+
+xgb_grid <- expand.grid(nrounds = c(700,800),
+                        max_depth = c(9,10),
+                        eta = c(0.01,0.009,0.03),
+                        gamma = 0,
+                        colsample_bytree = c(0.6,0.7),
+                        min_child_weight = 1, # similar to n.minobsinnode
+                        subsample = c(0.2, 0.5))
+
+set.seed(13505)
+xgboost_model <- train(diabetes_mellitus ~ .,
+                       method = "xgbTree",
+                       data = data_train,
+                       trControl = train_control,
+                       tuneGrid = xgb_grid)
+
+saveRDS(xgboost_model, "xgboost2.RDS")
+
+# add predictions to test set
+validation_prediction_probs <- predict.train(xgboost_model, 
+                                             newdata = data_test, 
+                                             type = "prob")
+
+data_test$diabetes_pred <- validation_prediction_probs$Yes
+
+# check performance on validation set
+xgboost_prediction <- prediction(validation_prediction_probs$Yes,
+                                 data_test[["diabetes_mellitus"]])
+
+(AUC_test <- performance(xgboost_prediction, "auc")@y.values)
+
+## predict for actual holdout set
+
+# add predictions to holdout set
+test_prediction_probs <- predict.train(xgboost_model, 
+                                       newdata = test_set, 
+                                       type = "prob")
+test_set$diabetes<- test_prediction_probs$Yes
+
+# submission
+xgb_submission <- data.table(
+  encounter_id = test_set$encounter_id,
+  diabetes_mellitus = test_set$diabetes)
+
+write.csv(xgb_submission, "xgb2.csv", row.names=FALSE)
