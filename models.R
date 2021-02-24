@@ -72,6 +72,8 @@ train_control <- trainControl(
   savePredictions = TRUE
 )
 
+write.csv(data_train, "training_split.csv")
+write.csv(data_test, "validation_split.csv")
 ## Baseline model------------------------------------------------------------------------------------------------------------------------------------------
 
 # I'm going to take the top 4 variables and add gender to them
