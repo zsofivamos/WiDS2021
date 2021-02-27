@@ -350,15 +350,15 @@ xgb_submission <- data.table(
 
 write.csv(xgb_submission, "xgb2.csv", row.names=FALSE)
 
-### XGBoost 3 - this didn't finish running
+### XGBoost 3
 
-xgb_grid <- expand.grid(nrounds = c(850),
-                        max_depth = c(9),
-                        eta = c(0.1,0.2),
-                        gamma = 1,
-                        colsample_bytree = 0.6,
+xgb_grid <- expand.grid(nrounds = c(700,850),
+                        max_depth = c(8,9),
+                        eta = 0.3,
+                        gamma = c(0,1),
+                        colsample_bytree = 0.7,
                         min_child_weight = 1, # similar to n.minobsinnode
-                        subsample = 0.6)
+                        subsample = 0.5)
 
 set.seed(13505)
 xgboost_model <- train(diabetes_mellitus ~ .,
@@ -383,7 +383,73 @@ xgboost_prediction <- prediction(validation_prediction_probs$Yes,
 
 (AUC_test <- performance(xgboost_prediction, "auc")@y.values)
 
-## to be finished
+
+## predict for actual holdout set
+
+# add predictions to holdout set
+test_prediction_probs <- predict.train(xgboost_model, 
+                                       newdata = test_set, 
+                                       type = "prob")
+test_set$diabetes<- test_prediction_probs$Yes
+
+# submission
+xgb_submission <- data.table(
+  encounter_id = test_set$encounter_id,
+  diabetes_mellitus = test_set$diabetes)
+
+write.csv(xgb_submission, "xgb3.csv", row.names=FALSE)
+
+### XGBoost 4 ---------
+
+### XGBoost 3
+
+xgb_grid <- expand.grid(nrounds = c(700,850),
+                        max_depth = c(8,9),
+                        eta = 0.3,
+                        gamma = c(0,1),
+                        colsample_bytree = 0.7,
+                        min_child_weight = 1, # similar to n.minobsinnode
+                        subsample = 0.5)
+
+set.seed(13505)
+xgboost_model <- train(diabetes_mellitus ~ .,
+                       method = "xgbTree",
+                       data = data_train,
+                       trControl = train_control,
+                       tuneGrid = xgb_grid)
+
+saveRDS(xgboost_model, "xgboost4.rds")
+
+
+# add predictions to test set
+validation_prediction_probs <- predict.train(xgboost_model, 
+                                             newdata = data_test, 
+                                             type = "prob")
+
+data_test$diabetes_pred <- validation_prediction_probs$Yes
+
+# check performance on validation set
+xgboost_prediction <- prediction(validation_prediction_probs$Yes,
+                                 data_test[["diabetes_mellitus"]])
+
+(AUC_test <- performance(xgboost_prediction, "auc")@y.values)
+
+
+## predict for actual holdout set
+
+# add predictions to holdout set
+test_prediction_probs <- predict.train(xgboost_model, 
+                                       newdata = test_set, 
+                                       type = "prob")
+test_set$diabetes<- test_prediction_probs$Yes
+
+# submission
+xgb_submission <- data.table(
+  encounter_id = test_set$encounter_id,
+  diabetes_mellitus = test_set$diabetes)
+
+write.csv(xgb_submission, "xgb4.csv", row.names=FALSE)
+
 
 ### Automl with h2o-----------------------------------------------------------------------------------------
 library(h2o)
@@ -473,7 +539,5 @@ aml_submission <- data.table(
 
 write.csv(aml_submission, "aml3.csv", row.names=FALSE)
 
-### Automl 4 -----------------------------------------------------------------------------------------------------------------------
-
-
+readRDS("xgboost2.RDS")
 
