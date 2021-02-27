@@ -401,9 +401,7 @@ write.csv(xgb_submission, "xgb3.csv", row.names=FALSE)
 
 ### XGBoost 4 ---------
 
-### XGBoost 3
-
-xgb_grid <- expand.grid(nrounds = c(700,850),
+xgb_grid <- expand.grid(nrounds = c(800,850),
                         max_depth = c(8,9),
                         eta = 0.3,
                         gamma = c(0,1),
