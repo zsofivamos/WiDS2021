@@ -68,8 +68,7 @@ dim(data_test)
 train_control <- trainControl(
   method = "cv",
   number = 5,
-  classProbs = TRUE,
-  savePredictions = TRUE
+  classProbs = TRUE
 )
 
 write.csv(data_train, "training_split.csv")
@@ -351,7 +350,130 @@ xgb_submission <- data.table(
 
 write.csv(xgb_submission, "xgb2.csv", row.names=FALSE)
 
+### XGBoost 3 - this didn't finish running
 
+xgb_grid <- expand.grid(nrounds = c(850),
+                        max_depth = c(9),
+                        eta = c(0.1,0.2),
+                        gamma = 1,
+                        colsample_bytree = 0.6,
+                        min_child_weight = 1, # similar to n.minobsinnode
+                        subsample = 0.6)
+
+set.seed(13505)
+xgboost_model <- train(diabetes_mellitus ~ .,
+                       method = "xgbTree",
+                       data = data_train,
+                       trControl = train_control,
+                       tuneGrid = xgb_grid)
+
+saveRDS(xgboost_model, "xgboost3.rds")
+
+
+# add predictions to test set
+validation_prediction_probs <- predict.train(xgboost_model, 
+                                             newdata = data_test, 
+                                             type = "prob")
+
+data_test$diabetes_pred <- validation_prediction_probs$Yes
+
+# check performance on validation set
+xgboost_prediction <- prediction(validation_prediction_probs$Yes,
+                                 data_test[["diabetes_mellitus"]])
+
+(AUC_test <- performance(xgboost_prediction, "auc")@y.values)
+
+## to be finished
+
+### Automl with h2o-----------------------------------------------------------------------------------------
+library(h2o)
+h2o.init()
+
+data <- h2o.importFile("imputed_df.csv")
+test_set <- h2o.importFile("unlabeled.csv")
+
+data_split <- h2o.splitFrame(data, ratios = 0.2, seed = 123)
+data_train <- data_split[[1]]
+data_test <- data_split[[2]]
+
+y <- "diabetes_mellitus"
+X <- setdiff(names(data_train), y)
+
+automl_model <- h2o.automl(X, y,
+                           training_frame = data_train,
+                           max_runtime_secs = 120)
+
+automl_model@leaderboard
+
+automl_model@leader
+
+# add predictions to holdout set
+automl_prediction <- h2o.predict(object = automl_model, newdata = test_set)
+
+pred <- as.data.frame(automl_prediction)
+test_set <- as.data.frame(test_set)
+
+test_set$diabetes<- pred$Yes
+
+# submission
+aml_submission <- data.table(
+  encounter_id = test_set$encounter_id,
+  diabetes_mellitus = test_set$diabetes)
+
+write.csv(aml_submission, "aml.csv", row.names=FALSE)
+
+### check if it improves when ran longer
+
+automl_model <- h2o.automl(X, y,
+                           training_frame = data_train,
+                           max_runtime_secs = 360)
+
+automl_model@leaderboard
+
+automl_model@leader
+
+# add predictions to holdout set
+automl_prediction <- h2o.predict(object = automl_model, newdata = test_set)
+
+pred <- as.data.frame(automl_prediction)
+test_set <- as.data.frame(test_set)
+
+test_set$diabetes<- pred$Yes
+
+# submission
+aml_submission <- data.table(
+  encounter_id = test_set$encounter_id,
+  diabetes_mellitus = test_set$diabetes)
+
+write.csv(aml_submission, "aml2.csv", row.names=FALSE)
+
+# it seems to have improved by 3%!
+# let's run for an hour
+
+### Automl 3 -----------------------------------------------------------------------------------------------------------------------
+
+automl_model <- h2o.automl(X, y,
+                           training_frame = data_train,
+                           max_runtime_secs = 3600,
+                           seed = 1456)
+
+
+# add predictions to holdout set
+automl_prediction <- h2o.predict(object = automl_model, newdata = test_set)
+
+pred <- as.data.frame(automl_prediction)
+test_set <- as.data.frame(test_set)
+
+test_set$diabetes<- pred$Yes
+
+# submission
+aml_submission <- data.table(
+  encounter_id = test_set$encounter_id,
+  diabetes_mellitus = test_set$diabetes)
+
+write.csv(aml_submission, "aml3.csv", row.names=FALSE)
+
+### Automl 4 -----------------------------------------------------------------------------------------------------------------------
 
 
 
