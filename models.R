@@ -416,7 +416,7 @@ xgboost_model <- train(diabetes_mellitus ~ .,
                        trControl = train_control,
                        tuneGrid = xgb_grid)
 
-saveRDS(xgboost_model, "xgboost4.rds")
+ saveRDS(xgboost_model, "xgboost4.rds")
 
 
 # add predictions to test set
@@ -447,7 +447,7 @@ xgb_submission <- data.table(
   diabetes_mellitus = test_set$diabetes)
 
 write.csv(xgb_submission, "xgb4.csv", row.names=FALSE)
-
+# this one is not good enouh for submission
 
 ### Automl with h2o-----------------------------------------------------------------------------------------
 library(h2o)
@@ -538,4 +538,6 @@ aml_submission <- data.table(
 write.csv(aml_submission, "aml3.csv", row.names=FALSE)
 
 readRDS("xgboost2.RDS")
+
+## stacked models
 
